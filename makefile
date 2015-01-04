@@ -6,8 +6,8 @@ DEBUG = -O4
 # cplex includes
 SYSTEM     = x86-64_linux
 LIBFORMAT 	= static_pic
-CPLEXDIR      = /home1/share/ILOG/cplex-12.6/cplex
-CONCERTDIR    = /home1/share/ILOG/cplex-12.6/concert
+CPLEXDIR      = /opt/ibm/ILOG/CPLEX_Studio126/cplex
+CONCERTDIR    = /opt/ibm/ILOG/CPLEX_Studio126/concert
 CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CONCERTLIBDIR = $(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CONCERTINCDIR   = $(CONCERTDIR)/include
