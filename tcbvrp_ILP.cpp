@@ -393,15 +393,6 @@ void tcbvrp_ILP::modelSCF()
 			if (instance.isSupplyNode(j)) {
 				model.add(e_scf_consumation == 0);
 			} else if (instance.isDemandNode(j)) {
-
-				/* TODO do we need this
-				e_scf_consumation += 1;
-				for (u_int i = 0; i < n; i++) {
-					if (i != j) {
-						e_scf_consumation -= x[getIndexFor(k, i, j)];
-					}
-				}*/
-
 				model.add(e_scf_consumation == 1 * y[k]);
 			}
 
