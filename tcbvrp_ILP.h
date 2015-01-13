@@ -4,6 +4,8 @@
 #include "Tools.h"
 #include "Instance.h"
 #include <ilcplex/ilocplex.h>
+#include <vector>
+#include <list>
 
 using namespace std;
 ILOSTLBEGIN
@@ -34,6 +36,8 @@ private:
 	void modelSCF();
 	void modelMCF();
 	void modelMTZ();
+
+	u_int getIndexFor(u_int k, u_int i, u_int j);
 
 public:
 
