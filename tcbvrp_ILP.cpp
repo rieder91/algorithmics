@@ -253,7 +253,7 @@ void tcbvrp_ILP::modelMTZ()
 		for (u_int i = 1; i < n; i++) {
 			IloExpr e_mtz_range(env);
 
-			e_mtz_range += M + 1;
+			e_mtz_range += n - 1;
 
 			model.add(1 <= u[getIndexFor(k, i)]);
 			model.add(u[getIndexFor(k, i)] <= e_mtz_range);
