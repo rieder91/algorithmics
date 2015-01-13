@@ -94,7 +94,7 @@ void tcbvrp_ILP::setCPLEXParameters()
 	//	cplex.setParam( IloCplex::FracCuts, -1 );
 
 	// only use a single thread
-	cplex.setParam( IloCplex::Threads, 4 );
+	cplex.setParam( IloCplex::Threads, 1 );
 	// set time limit for cplex (in seconds)
 	cplex.setParam( IloCplex::TiLim, 3600);
 }
