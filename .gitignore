@@ -29,3 +29,5 @@
 tcbvrp
 *~
 *.swp
+.idea
+.vagrant

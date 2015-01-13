@@ -223,13 +223,13 @@ void tcbvrp_ILP::modelMTZ()
 		}
 	}
 
-	u_int big_m = demandNodes.size() - 2;
+	u_int big_m = n - 2;
 
 	cout << "mtz1: Creating the MTZ ordering\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int i = 1; i < n; i++) {
 			for (u_int j = 1; j < n; j++) {
-				if (i != j && instance.isDemandNode(i) && instance.isSupplyNode(j)) {
+				if (i != j) {
 					IloExpr e_mtz_ordering(env);
 
 					e_mtz_ordering += u[getIndexFor(k, i)];
@@ -257,7 +257,7 @@ void tcbvrp_ILP::modelMTZ()
 	cout << "mtz2: range\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int i = 1; i < n; i++) {
-			if (instance.isDemandNode(i)) {
+			if (true || instance.isDemandNode(i)) {
 				IloExpr e_mtz_range(env);
 
 				e_mtz_range += big_m + 1;
