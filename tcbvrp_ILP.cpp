@@ -223,9 +223,9 @@ void tcbvrp_ILP::modelMTZ()
 		}
 	}
 
-	u_int big_m = n - 2;
+	u_int M = n - 2;
 
-	cout << "mtz1: Creating the MTZ ordering\n";
+	cout << "mtz1 - Creating the MTZ ordering\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int i = 1; i < n; i++) {
 			for (u_int j = 1; j < n; j++) {
@@ -233,17 +233,11 @@ void tcbvrp_ILP::modelMTZ()
 					IloExpr e_mtz_ordering(env);
 
 					e_mtz_ordering += u[getIndexFor(k, i)];
-
-					for (u_int l = 0; l < m; l++) {
-						e_mtz_ordering += x[getIndexFor(l, i, j)];
-					}
-
 					e_mtz_ordering -= u[getIndexFor(k, j)];
-
-					e_mtz_ordering -= big_m;
+					e_mtz_ordering -= M;
 
 					for (u_int l = 0; l < m; l++) {
-						e_mtz_ordering += ((int) big_m) * x[getIndexFor(l, i, j)];
+						e_mtz_ordering += ((int)M + 1) * x[getIndexFor(l, i, j)];
 					}
 
 					model.add(e_mtz_ordering <= 0);
@@ -254,19 +248,17 @@ void tcbvrp_ILP::modelMTZ()
 		}
 	}
 
-	cout << "mtz2: range\n";
+	cout << "mtz2 - Limit ordering range\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int i = 1; i < n; i++) {
-			if (true || instance.isDemandNode(i)) {
-				IloExpr e_mtz_range(env);
+			IloExpr e_mtz_range(env);
 
-				e_mtz_range += big_m + 1;
+			e_mtz_range += M + 1;
 
-				model.add(1 <= u[getIndexFor(k, i)]);
-				model.add(u[getIndexFor(k, i)] <= e_mtz_range);
+			model.add(1 <= u[getIndexFor(k, i)]);
+			model.add(u[getIndexFor(k, i)] <= e_mtz_range);
 
-				e_mtz_range.end();
-			}
+			e_mtz_range.end();
 		}
 	}
 
