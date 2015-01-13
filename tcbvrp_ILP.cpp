@@ -63,6 +63,7 @@ void tcbvrp_ILP::solve()
 		cout << "CPLEX finished." << "\n\n";
 		cout << "CPLEX status: " << cplex.getStatus() << "\n";
 		cout << "Branch-and-Bound nodes: " << cplex.getNnodes() << "\n";
+		cout << "Epsilon: " << cplex.getParam(IloCplex::EpInt) << "\n";
 		cout << "Objective value: " << cplex.getObjValue() << "\n";
 		cout << "CPU time: " << Tools::CPUtime() << "\n\n";
 
