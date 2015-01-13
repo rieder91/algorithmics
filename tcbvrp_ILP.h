@@ -30,6 +30,13 @@ private:
 	IloModel model;
 	IloCplex cplex;
 
+	// lists containing the respective nodes
+	vector<int> supplyNodes;
+	vector<int> demandNodes;
+
+	IloBoolVarArray x;
+	IloBoolVarArray y;
+
 	void initCPLEX();
 	void setCPLEXParameters();
 
@@ -38,6 +45,9 @@ private:
 	void modelMTZ();
 
 	u_int getIndexFor(u_int k, u_int i, u_int j);
+	u_int getIndexFor(u_int k, u_int i);
+	void init();
+	void addConstraints();
 
 public:
 

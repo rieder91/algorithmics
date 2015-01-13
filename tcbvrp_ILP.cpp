@@ -1,4 +1,4 @@
-#include "tcbvrp_ILP.h"
+﻿#include "tcbvrp_ILP.h"
 
 tcbvrp_ILP::tcbvrp_ILP( Instance& _instance, string _model_type) :
 instance( _instance ), model_type( _model_type )
@@ -28,13 +28,25 @@ void tcbvrp_ILP::solve()
 		env = IloEnv();
 		model = IloModel( env );
 
+		// Init Model
+		init();
+
 		// add model-specific constraints
-		if( model_type == "scf" )
+		if(model_type == "scf")
+		{
+			cout << "Building SCF model\n";
 			modelSCF();
-		else if( model_type == "mcf" )
+		}
+		else if (model_type == "mcf")
+		{
+			cout << "Building MCF model\n";
 			modelMCF();
-		else if( model_type == "mtz" )
+		}
+		else if (model_type == "mtz")
+		{
+			cout << "Building MTZ model\n";
 			modelMTZ();
+		}
 
 		// build model
 		cplex = IloCplex( model );
@@ -101,21 +113,177 @@ void tcbvrp_ILP::setCPLEXParameters()
 
 void tcbvrp_ILP::modelSCF()
 {
-	cout << "Building SCF model\n";
+	cout << "Creating the SCF decision variable\n";
+	IloIntVarArray f = IloIntVarArray(env, m * n * n);
+	u_int f_cnt = 0;
+	for (u_int k = 0; k < m; k++) {
+		for (u_int i = 0; i < n; i++) {
+			for (u_int j = 0; j < n; j++) {
+				f[f_cnt] = IloIntVar(env, Tools::indicesToString("f", k, i, j).c_str());
 
+				// verify that our getIndexFor() method works
+				if (getIndexFor(k, i, j) != f_cnt) {
+					cout << "\n\ngetIndexFor() failed!!!\n";
+					cout << getIndexFor(k, i, j) << "/" << f_cnt;
+				}
+
+				f_cnt++;
+			}
+		}
+	}
+
+
+	cout << "scf1 - Outflow from depot for each car\n";
+	for (u_int k = 0; k < m; k++) {
+		IloExpr e_scf_outflow_from_depot(env);
+
+		for (u_int i = 0; i < supplyNodes.size(); i++) {
+			e_scf_outflow_from_depot += f[getIndexFor(k, 0, supplyNodes[i])];
+		}
+
+		model.add(e_scf_outflow_from_depot == ((int) demandNodes.size()) * y[k]);
+		e_scf_outflow_from_depot.end();
+	}
+
+
+	cout << "scf2 - consumation properties\n";
+	for (u_int k = 0; k < m; k++) {
+		// skip the depot node 0
+		for (u_int j = 1; j < n; j++) {
+			IloExpr e_scf_consumation(env);
+
+			for (u_int i = 0; i < n; i++) {
+				if (i != j) {
+					e_scf_consumation += f[getIndexFor(k, i, j)];
+				}
+			}
+			for (u_int k1 = 0; k1 < n; k1++) {
+				if (k1 != j) {
+					e_scf_consumation -= f[getIndexFor(k, j, k1)];
+				}
+			}
+
+
+			if (instance.isSupplyNode(j)) {
+				model.add(e_scf_consumation == 0);
+			} else if (instance.isDemandNode(j)) {
+				model.add(e_scf_consumation == 1 * y[k]);
+			}
+
+			e_scf_consumation.end();
+		}
+	}
+
+
+	cout << "scf3 - flow constraints\n";
+	for (u_int k = 0; k < m; k++) {
+		for (u_int i = 0; i < n; i++) {
+			for (u_int j = 0; j < n; j++) {
+				if (i != j) {
+					IloExpr e_scf_range(env);
+
+					for (u_int k1 = 0; k1 < m; k1++) {
+						e_scf_range += x[getIndexFor(k1, i, j)];
+					}
+					e_scf_range *= ((int) demandNodes.size());
+
+					model.add(f[getIndexFor(k, i, j)] >= 0);
+					model.add(f[getIndexFor(k, i, j)] <= e_scf_range);
+
+					e_scf_range.end();
+				}
+			}
+		}
+	}
+}
+
+void tcbvrp_ILP::modelMCF()
+{
+	// ++++++++++++++++++++++++++++++++++++++++++
+	// TODO build multi commodity flow model
+	// ++++++++++++++++++++++++++++++++++++++++++
+}
+
+void tcbvrp_ILP::modelMTZ()
+{
+	cout << "Creating the MTZ decision variable u\n";
+	IloIntVarArray u = IloIntVarArray(env, m * n);
+	u_int u_cnt = 0;
+	for (u_int k = 0; k < m; k++) {
+		for (u_int i = 0; i < n; i++) {
+			u[u_cnt] = IloIntVar(env, Tools::indicesToString("u", k, i).c_str());
+
+			// verify that our getIndexFor() method works
+			if (getIndexFor(k, i) != u_cnt) {
+				cout << "\n\ngetIndexFor() failed!!!\n";
+				cout << getIndexFor(k, i) << "/" << u_cnt;
+			}
+
+			u_cnt++;
+		}
+	}
+
+	u_int big_m = demandNodes.size() - 2;
+
+	cout << "mtz1: Creating the MTZ ordering\n";
+	for (u_int k = 0; k < m; k++) {
+		for (u_int i = 1; i < n; i++) {
+			for (u_int j = 1; j < n; j++) {
+				if (i != j && instance.isDemandNode(i) && instance.isSupplyNode(j)) {
+					IloExpr e_mtz_ordering(env);
+
+					e_mtz_ordering += u[getIndexFor(k, i)];
+
+					for (u_int l = 0; l < m; l++) {
+						e_mtz_ordering += x[getIndexFor(l, i, j)];
+					}
+
+					e_mtz_ordering -= u[getIndexFor(k, j)];
+
+					e_mtz_ordering -= big_m;
+
+					for (u_int l = 0; l < m; l++) {
+						e_mtz_ordering += ((int) big_m) * x[getIndexFor(l, i, j)];
+					}
+
+					model.add(e_mtz_ordering <= 0);
+
+					e_mtz_ordering.end();
+				}
+			}
+		}
+	}
+
+	cout << "mtz2: range\n";
+	for (u_int k = 0; k < m; k++) {
+		for (u_int i = 1; i < n; i++) {
+			if (instance.isDemandNode(i)) {
+				IloExpr e_mtz_range(env);
+
+				e_mtz_range += big_m + 1;
+
+				model.add(1 <= u[getIndexFor(k, i)]);
+				model.add(u[getIndexFor(k, i)] <= e_mtz_range);
+
+				e_mtz_range.end();
+			}
+		}
+	}
+
+}
+
+void tcbvrp_ILP::init()
+{
 	cout << "There are " << n << " nodes \n";
 	cout << "There are " << m << " cars \n";
-
-	// lists containing the respective nodes
-	vector<int> supplyNodes;
-	vector<int> demandNodes;
 
 	// we start from 1 because 0 is the depot node
 	for (unsigned int i = 0; i < n; i++) {
 		if (instance.isSupplyNode(i)) {
 			supplyNodes.push_back(i);
 			cout << i << " is a supply node\n";
-		} else if (instance.isDemandNode(i)) {
+		}
+		else if (instance.isDemandNode(i)) {
 			cout << i << " is a demand node\n";
 			demandNodes.push_back(i);
 		}
@@ -124,9 +292,14 @@ void tcbvrp_ILP::modelSCF()
 	cout << "There are " << supplyNodes.size() << " supply nodes\n";
 	cout << "There are " << demandNodes.size() << " demand nodes\n";
 
+	addConstraints();
+}
 
+
+void tcbvrp_ILP::addConstraints()
+{
 	cout << "Creating the \"main\" decision variable\n";
-	IloBoolVarArray x = IloBoolVarArray(env, m * n * n);
+	x = IloBoolVarArray(env, m * n * n);
 	u_int x_cnt = 0;
 	for (u_int k = 0; k < m; k++) {
 		for (u_int i = 0; i < n; i++) {
@@ -146,7 +319,7 @@ void tcbvrp_ILP::modelSCF()
 
 
 	cout << "Creating the decision variable to indicate whether a car drives around\n";
-	IloBoolVarArray y = IloBoolVarArray(env, m);
+	y = IloBoolVarArray(env, m);
 	u_int y_cnt = 0;
 	for (u_int k = 0; k < m; k++) {
 		y[y_cnt] = IloBoolVar(env, Tools::indicesToString("y", k).c_str());
@@ -328,115 +501,6 @@ void tcbvrp_ILP::modelSCF()
 		model.add(e_car_uses_depot == y[k]);
 		e_car_uses_depot.end();
 	}
-
-
-	//
-	//
-	// END OF GENERAL PART
-	// BEGIN OF SCF
-	//
-	//
-
-
-	cout << "Creating the SCF decision variable\n";
-	IloIntVarArray f = IloIntVarArray(env, m * n * n);
-	u_int f_cnt = 0;
-	for (u_int k = 0; k < m; k++) {
-		for (u_int i = 0; i < n; i++) {
-			for (u_int j = 0; j < n; j++) {
-				f[f_cnt] = IloIntVar(env, Tools::indicesToString("f", k, i, j).c_str());
-
-				// verify that our getIndexFor() method works
-				if (getIndexFor(k, i, j) != f_cnt) {
-					cout << "\n\ngetIndexFor() failed!!!\n";
-					cout << getIndexFor(k, i, j) << "/" << f_cnt;
-				}
-
-				f_cnt++;
-			}
-		}
-	}
-
-
-	cout << "scf1 - Outflow from depot for each car\n";
-	for (u_int k = 0; k < m; k++) {
-		IloExpr e_scf_outflow_from_depot(env);
-
-		for (u_int i = 0; i < supplyNodes.size(); i++) {
-			e_scf_outflow_from_depot += f[getIndexFor(k, 0, supplyNodes[i])];
-		}
-
-		model.add(e_scf_outflow_from_depot == ((int) demandNodes.size()) * y[k]);
-		e_scf_outflow_from_depot.end();
-	}
-
-
-
-	cout << "scf2 - consumation properties\n";
-	for (u_int k = 0; k < m; k++) {
-		// skip the depot node 0
-		for (u_int j = 1; j < n; j++) {
-			IloExpr e_scf_consumation(env);
-
-			for (u_int i = 0; i < n; i++) {
-				if (i != j) {
-					e_scf_consumation += f[getIndexFor(k, i, j)];
-				}
-			}
-			for (u_int k1 = 0; k1 < n; k1++) {
-				if (k1 != j) {
-					e_scf_consumation -= f[getIndexFor(k, j, k1)];
-				}
-			}
-
-
-			if (instance.isSupplyNode(j)) {
-				model.add(e_scf_consumation == 0);
-			} else if (instance.isDemandNode(j)) {
-				model.add(e_scf_consumation == 1 * y[k]);
-			}
-
-			e_scf_consumation.end();
-		}
-	}
-
-
-	cout << "scf3 - flow constraints\n";
-	for (u_int k = 0; k < m; k++) {
-		for (u_int i = 0; i < n; i++) {
-			for (u_int j = 0; j < n; j++) {
-				if (i != j) {
-					IloExpr e_scf_range(env);
-
-					for (u_int k1 = 0; k1 < m; k1++) {
-						e_scf_range += x[getIndexFor(k1, i, j)];
-					}
-					e_scf_range *= ((int) demandNodes.size());
-
-					model.add(f[getIndexFor(k, i, j)] >= 0);
-					model.add(f[getIndexFor(k, i, j)] <= e_scf_range);
-
-					e_scf_range.end();
-				}
-			}
-		}
-	}
-}
-
-void tcbvrp_ILP::modelMCF()
-{
-	cout << "Building MCF model\n";
-	// ++++++++++++++++++++++++++++++++++++++++++
-	// TODO build multi commodity flow model
-	// ++++++++++++++++++++++++++++++++++++++++++
-}
-
-void tcbvrp_ILP::modelMTZ()
-{
-	cout << "Building MTZ model\n";
-	// ++++++++++++++++++++++++++++++++++++++++++
-	// TODO build Miller-Tucker-Zemlin model
-	// ++++++++++++++++++++++++++++++++++++++++++
 }
 
 
@@ -454,6 +518,18 @@ u_int tcbvrp_ILP::getIndexFor(u_int k, u_int i, u_int j) {
 	if (j > 0) {
 		idx += j;
 	}
+
+	return idx;
+}
+
+u_int tcbvrp_ILP::getIndexFor(u_int k, u_int i) {
+	u_int idx = 0;
+
+	if (k > 0) {
+		idx += n*k;
+	}
+
+	idx += i;
 
 	return idx;
 }
