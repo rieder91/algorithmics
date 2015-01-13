@@ -1,11 +1,12 @@
 #include "Tools.h"
 
-string Tools::indicesToString( string prefix, int i, int j, int v )
+string Tools::indicesToString( string prefix, int i, int j, int v, int w)
 {
 	stringstream ss;
 	ss << prefix << "(" << i;
-	if( j >= 0 ) ss << ',' << j;
-	if( v >= 0 ) ss << ',' << v;
+	if (j >= 0) ss << ',' << j;
+	if (v >= 0) ss << ',' << v;
+	if (w >= 0) ss << ',' << w;
 	ss << ')';
 	return ss.str();
 }

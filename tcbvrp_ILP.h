@@ -44,6 +44,7 @@ private:
 	void modelMCF();
 	void modelMTZ();
 
+	u_int getIndexFor(u_int k, u_int i, u_int j, u_int l);
 	u_int getIndexFor(u_int k, u_int i, u_int j);
 	u_int getIndexFor(u_int k, u_int i);
 	void init();

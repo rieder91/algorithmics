@@ -20,7 +20,7 @@ using namespace std;
 namespace Tools
 {
 	// generate string from edge indices
-	string indicesToString( string prefix, int i, int j = -1, int v = -1 );
+	string indicesToString(string prefix, int i, int j = -1, int v = -1, int w = -1);
 	// measure running time
 	double CPUtime();
 }

@@ -199,9 +199,103 @@ void tcbvrp_ILP::modelSCF()
 
 void tcbvrp_ILP::modelMCF()
 {
-	// ++++++++++++++++++++++++++++++++++++++++++
-	// TODO build multi commodity flow model
-	// ++++++++++++++++++++++++++++++++++++++++++
+	cout << "Creating the MCF decision variable\n";
+	IloIntVarArray f = IloIntVarArray(env, m * n * n * n);
+	u_int f_cnt = 0;
+	for (u_int k = 0; k < m; k++) {
+		for (u_int i = 0; i < n; i++) {
+			for (u_int j = 0; j < n; j++) {
+				for (u_int l = 0; l < n; l++) {
+					f[f_cnt] = IloIntVar(env, Tools::indicesToString("f", k, i, j, l).c_str());
+
+					// verify that our getIndexFor() method works
+					if (getIndexFor(k, i, j, l) != f_cnt) {
+						cout << "\n\ngetIndexFor() failed!!!\n";
+						cout << getIndexFor(k, i, j, l) << "/" << f_cnt;
+					}
+
+					f_cnt++;
+				}
+			}
+		}
+	}
+
+	cout << "mcf1 - outflow\n";
+	for (u_int k = 0; k < m; k++) {
+		for (u_int l = 1; l < n; l++) {
+			IloExpr e_mcf_outflow(env);
+
+			for (u_int j = 1; j < n; j++) {
+				e_mcf_outflow += f[getIndexFor(k, 0, j, l)];
+				e_mcf_outflow -= f[getIndexFor(k, j, 0, l)];
+			}
+
+			// TODO only for active cars?     *y[k]
+			model.add(e_mcf_outflow == 1);
+			e_mcf_outflow.end();
+		}
+	}
+
+	cout << "mcf2 - ???\n";
+	for (u_int k = 0; k < m; k++) {
+		for (u_int l = 1; l < n; l++) {
+			IloExpr e_mcf(env);
+
+			for (u_int i = 0; i < n; i++) {
+				if (i != l) {
+					e_mcf += f[getIndexFor(k, i, l, l)];
+				}
+			}
+
+			// TODO only for active cars?     *y[k]
+			model.add(e_mcf == 1);
+			e_mcf.end();
+		}
+	}
+
+	cout << "mcf3 - ???\n";
+	for (u_int k = 0; k < m; k++) {
+		for (u_int l = 1; l < n; l++) {
+			for (u_int j = 1; j < n; j++) {
+				if (j != l) {
+					IloExpr e_mcf(env);
+
+					for (u_int i = 0; i < n; i++) {
+						if (i != j) {
+							e_mcf += f[getIndexFor(k, i, j, l)];
+							e_mcf -= f[getIndexFor(k, j, i, l)];
+						}
+					}
+
+					// TODO only for active cars?     *y[k]
+					model.add(e_mcf == 0);
+					e_mcf.end();
+				}
+			}
+		}
+	}
+
+	cout << "mcf4 - ???\n";
+	for (u_int k = 0; k < m; k++) {
+		for (u_int i = 0; i < n; i++) {
+			for (u_int j = 0; j < n; j++) {
+				for (u_int l = 1; l < n; l++) {
+					if (i != j) {
+						IloExpr e_mcf(env);
+
+						for (u_int k1 = 0; k1 < m; k1++) {
+							e_mcf += x[getIndexFor(k1, i, j)];
+						}
+
+						// TODO only for active cars?     *y[k]
+						model.add(0 <= f[getIndexFor(k, i, j, l)]);
+						model.add(f[getIndexFor(k, i, j, l)] <= e_mcf);
+						e_mcf.end();
+					}
+				}
+			}
+		}
+	}
 }
 
 void tcbvrp_ILP::modelMTZ()
@@ -496,6 +590,27 @@ void tcbvrp_ILP::addConstraints()
 }
 
 
+
+u_int tcbvrp_ILP::getIndexFor(u_int k, u_int i, u_int j, u_int l) {
+	u_int idx = 0;
+
+	if (k > 0) {
+		idx += n*n*n*k;
+	}
+
+	if (i > 0) {
+		idx += n*n*i;
+	}
+
+	if (j > 0) {
+		idx += n*j;
+	}
+
+	idx += l;
+
+	return idx;
+}
+
 u_int tcbvrp_ILP::getIndexFor(u_int k, u_int i, u_int j) {
 	u_int idx = 0;
 
@@ -507,9 +622,7 @@ u_int tcbvrp_ILP::getIndexFor(u_int k, u_int i, u_int j) {
 		idx += n*i;
 	}
 
-	if (j > 0) {
-		idx += j;
-	}
+	idx += j;
 
 	return idx;
 }
