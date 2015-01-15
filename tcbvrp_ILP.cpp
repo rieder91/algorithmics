@@ -77,10 +77,6 @@ void tcbvrp_ILP::solve()
   					//cerr << "Exception for variable " << e << "\n";
   				}
   		}
-
-		if( false ) {
-			// TODO optionally output the values of the variables
-		}
 	}
 	catch( IloException& e ) {
 		cerr << "tcbvrp_ILP: exception " << e << "\n";
@@ -96,8 +92,6 @@ void tcbvrp_ILP::solve()
 
 void tcbvrp_ILP::setCPLEXParameters()
 {
-	// TODO impr0ve
-
 	// print every line of node-log and give more details
 	//cplex.setParam( IloCplex::MIPInterval, 1 );
 	//cplex.setParam( IloCplex::MIPDisplay, 2 );
@@ -231,7 +225,6 @@ void tcbvrp_ILP::modelMCF()
 				e_mcf_outflow -= f[getIndexFor(k, j, 0, l)];
 			}
 
-			// TODO only for active cars?     *y[k]
 			model.add(e_mcf_outflow == 1);
 			e_mcf_outflow.end();
 		}
@@ -248,13 +241,12 @@ void tcbvrp_ILP::modelMCF()
 				}
 			}
 
-			// TODO only for active cars?     *y[k]
 			model.add(e_mcf == 1);
 			e_mcf.end();
 		}
 	}
 
-	cout << "mcf3 - ???\n";
+	cout << "mcf3 - backflow\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int l = 1; l < n; l++) {
 			for (u_int j = 1; j < n; j++) {
@@ -268,7 +260,6 @@ void tcbvrp_ILP::modelMCF()
 						}
 					}
 
-					// TODO only for active cars?     *y[k]
 					model.add(e_mcf == 0);
 					e_mcf.end();
 				}
@@ -276,7 +267,7 @@ void tcbvrp_ILP::modelMCF()
 		}
 	}
 
-	cout << "mcf4 - ???\n";
+	cout << "mcf4 - limit the flow depending on whether some car visits the node\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int i = 0; i < n; i++) {
 			for (u_int j = 0; j < n; j++) {
@@ -288,7 +279,6 @@ void tcbvrp_ILP::modelMCF()
 							e_mcf += x[getIndexFor(k1, i, j)];
 						}
 
-						// TODO only for active cars?     *y[k]
 						model.add(0 <= f[getIndexFor(k, i, j, l)]);
 						model.add(f[getIndexFor(k, i, j, l)] <= e_mcf);
 						e_mcf.end();
