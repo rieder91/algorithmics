@@ -215,7 +215,7 @@ void tcbvrp_ILP::modelMCF()
 		}
 	}
 
-	cout << "mcf1 - outflow\n";
+	cout << "mcf1 - outflow from the depot\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int l = 1; l < n; l++) {
 			IloExpr e_mcf_outflow(env);
@@ -230,7 +230,7 @@ void tcbvrp_ILP::modelMCF()
 		}
 	}
 
-	cout << "mcf2 - ???\n";
+	cout << "mcf2 - outflow from each node\n";
 	for (u_int k = 0; k < m; k++) {
 		for (u_int l = 1; l < n; l++) {
 			IloExpr e_mcf(env);
