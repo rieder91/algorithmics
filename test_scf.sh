@@ -1,6 +1,7 @@
 #!/bin/bash
 make clean
 make
+
 ./tcbvrp -m scf -f instances/tcbvrp_10_1_T240_m2.prob
 ./tcbvrp -m scf -f instances/tcbvrp_10_1_T480_m2.prob
 
